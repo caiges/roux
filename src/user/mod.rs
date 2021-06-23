@@ -26,12 +26,15 @@ extern crate reqwest;
 extern crate serde_json;
 
 use crate::util::RouxError;
+use futures::stream;
+use futures::stream::{Stream, Unfold};
 use reqwest::Client;
-
+use std::error::Error;
 pub mod responses;
+use crate::requests::PaginationOptions;
 use crate::subreddit::responses::{Submissions, SubredditComments};
+use futures::future::*;
 use responses::Overview;
-
 /// User.
 pub struct User {
     /// User's name.
@@ -88,6 +91,30 @@ impl User {
             .await?
             .json::<SubredditComments>()
             .await?)
+    }
+
+    /// items returns a stream for user submissions.
+    pub fn items(&self) -> impl Stream<Item = Submissions> + '_ {
+        stream::unfold("", move |state| async move {
+            match self
+                .client
+                .get(&format!(
+                    "https://www.reddit.com/user/{}/submitted/.json?after={}",
+                    self.user, state
+                ))
+                .send()
+                .await
+            {
+                Ok(r) => match r.json::<Submissions>().await {
+                    Ok(subs) => {
+                        //let after = subs.data.after.unwrap();
+                        Some((subs, "foobs"))
+                    }
+                    Err(_) => None,
+                },
+                Err(_) => None,
+            }
+        })
     }
 }
 
