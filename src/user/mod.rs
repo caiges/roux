@@ -1,6 +1,8 @@
 use crate::subreddit::responses::{Submissions, SubredditComments};
 use crate::util::RouxError;
 use crate::Reddit;
+use futures::stream;
+use futures::stream::{Stream, StreamExt};
 use responses::Overview;
 
 pub mod responses;
@@ -64,6 +66,30 @@ impl<'reddit> User<'reddit> {
             .await?
             .json::<SubredditComments>()
             .await?)
+    }
+
+    /// items returns a stream for user submissions.
+    pub fn items(&self) -> impl Stream<Item = Submissions> + '_ {
+        stream::unfold("", move |state| async move {
+            match self
+                .reddit
+                .get(&format!(
+                    "https://www.reddit.com/user/{}/submitted/.json?after={}",
+                    self.user, state
+                ))
+                .send()
+                .await
+            {
+                Ok(r) => match r.json::<Submissions>().await {
+                    Ok(subs) => {
+                        //let after = subs.data.after.unwrap();
+                        Some((subs, "foobs"))
+                    }
+                    Err(_) => None,
+                },
+                Err(_) => None,
+            }
+        })
     }
 }
 

@@ -114,6 +114,7 @@ pub use user::User;
 pub mod me;
 pub use me::Me;
 
+pub mod requests;
 pub mod responses;
 
 /// Utils for requests.
