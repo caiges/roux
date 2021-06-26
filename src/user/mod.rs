@@ -27,13 +27,13 @@ extern crate serde_json;
 
 use crate::util::RouxError;
 use futures::stream;
-use futures::stream::{Stream, Unfold};
+use futures::stream::{Stream, StreamExt};
 use reqwest::Client;
-use std::error::Error;
+use std::iter::Iterator;
+use std::pin::Pin;
 pub mod responses;
-use crate::requests::PaginationOptions;
-use crate::subreddit::responses::{Submissions, SubredditComments};
-use futures::future::*;
+use crate::requests::AfterState;
+use crate::subreddit::responses::{Submissions, SubmissionsData, SubredditComments};
 use responses::Overview;
 /// User.
 pub struct User {
@@ -94,27 +94,43 @@ impl User {
     }
 
     /// items returns a stream for user submissions.
-    pub fn items(&self) -> impl Stream<Item = Submissions> + '_ {
-        stream::unfold("", move |state| async move {
-            match self
-                .client
-                .get(&format!(
-                    "https://www.reddit.com/user/{}/submitted/.json?after={}",
-                    self.user, state
-                ))
-                .send()
-                .await
-            {
-                Ok(r) => match r.json::<Submissions>().await {
-                    Ok(subs) => {
-                        //let after = subs.data.after.unwrap();
-                        Some((subs, "foobs"))
-                    }
+    pub fn items(&self, after: AfterState) -> Pin<Box<dyn Stream<Item = SubmissionsData> + '_>> {
+        Box::pin(
+            stream::unfold(after, move |state| async move {
+                let af = match state {
+                    AfterState::Start(a) => a,
+                    AfterState::Next(a) => Some(a),
+                    AfterState::End => return None,
+                };
+
+                let url = match af {
+                    Some(a) => format!(
+                        "https://www.reddit.com/user/{}/submitted/.json?after={}",
+                        self.user, a
+                    ),
+                    None => format!("https://www.reddit.com/user/{}/submitted/.json", self.user),
+                };
+
+                match self.client.get(&url).send().await {
+                    Ok(r) => match r.json::<Submissions>().await {
+                        Ok(subs) => {
+                            let next_after = match subs.data.after {
+                                Some(a) => AfterState::Next(a),
+                                None => AfterState::End,
+                            };
+
+                            Some((
+                                stream::iter(subs.data.children.into_iter().map(move |c| c.data)),
+                                next_after,
+                            ))
+                        }
+                        Err(_) => None,
+                    },
                     Err(_) => None,
-                },
-                Err(_) => None,
-            }
-        })
+                }
+            })
+            .flatten(),
+        )
     }
 }
 

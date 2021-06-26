@@ -2,6 +2,7 @@
 use crate::responses::BasicListing;
 use serde::Deserialize;
 use serde_json::Value;
+use std::iter::FromIterator;
 
 /// SubmissionsData
 #[derive(Debug, Deserialize)]
