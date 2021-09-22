@@ -69,7 +69,7 @@ use reqwest::header::USER_AGENT;
 use reqwest::Client;
 
 /// Client configuration module.
-pub mod config;
+mod config;
 
 /// Subreddit module.
 pub mod subreddit;

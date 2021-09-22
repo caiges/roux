@@ -63,10 +63,9 @@
 extern crate reqwest;
 extern crate serde_json;
 
-use crate::config::Config;
-use crate::util::{FeedOption, RouxError};
+use crate::util::{url, FeedOption, RouxError};
 use reqwest::{
-    header::{HeaderMap, USER_AGENT},
+    header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT},
     Client, ClientBuilder,
 };
 
@@ -74,6 +73,12 @@ pub mod responses;
 use responses::{
     Moderators, Submissions, SubredditComments, SubredditData, SubredditResponse, SubredditsListing,
 };
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+struct AuthData {
+    pub access_token: String,
+}
 
 /// Access subreddits API
 pub struct Subreddits;
@@ -116,24 +121,63 @@ pub struct Subreddit {
 
 impl Subreddit {
     /// Create a new `Subreddit` instance.
-    pub fn new(name: &str, config: Option<Config>) -> Subreddit {
+    pub fn new(name: &str) -> Subreddit {
         let subreddit_url = format!("https://www.reddit.com/r/{}", name);
-        let client = match config {
-            Some(config) => {
-                let mut headers = HeaderMap::new();
-                headers.insert(USER_AGENT, config.user_agent[..].parse().unwrap());
-                ClientBuilder::new()
-                    .default_headers(headers)
-                    .build()
-                    .unwrap()
-            }
-            None => Client::new(),
-        };
-
         Subreddit {
             name: name.to_owned(),
             url: subreddit_url,
-            client,
+            client: Client::new(),
+        }
+    }
+
+    /// Create a new `Subreddit` instance.
+    pub async fn new_authenticated(
+        name: &str,
+        user_agent: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<Subreddit, RouxError> {
+        let subreddit_url = format!("https://www.reddit.com/r/{}", name);
+        let mut headers = HeaderMap::new();
+        headers.insert(USER_AGENT, user_agent[..].parse().unwrap());
+        let client = ClientBuilder::new()
+            .default_headers(headers)
+            .build()
+            .unwrap();
+
+        let url = &url::build_url("api/v1/access_token")[..];
+        let form = [("grant_type", "client_credentials")];
+
+        let request = client
+            .post(url)
+            .header(USER_AGENT, &user_agent[..])
+            .basic_auth(&client_id, Some(&client_secret))
+            .form(&form);
+
+        let response = request.send().await?;
+
+        if response.status() == 200 {
+            let auth_data = response.json::<AuthData>().await.unwrap();
+            println!("auth data: {:?}", auth_data);
+            let mut headers = HeaderMap::new();
+            headers.insert(USER_AGENT, user_agent[..].parse().unwrap());
+            headers.insert(
+                AUTHORIZATION,
+                HeaderValue::from_str(&format!("Bearer {}", auth_data.access_token)).unwrap(),
+            );
+
+            let subreddit_client = ClientBuilder::new()
+                .default_headers(headers)
+                .build()
+                .unwrap();
+
+            Ok(Subreddit {
+                name: name.to_owned(),
+                url: subreddit_url,
+                client: subreddit_client,
+            })
+        } else {
+            Err(RouxError::Status(response))
         }
     }
 
@@ -173,13 +217,11 @@ impl Subreddit {
             options.build_url(url);
         }
 
-        Ok(self
-            .client
-            .get(&url.to_owned())
-            .send()
-            .await?
-            .json::<Submissions>()
-            .await?)
+        let res = self.client.get(&url.to_owned()).send().await?;
+
+        println!("{:?}", self.client);
+
+        Ok(res.json::<Submissions>().await?)
     }
 
     async fn get_comment_feed(
@@ -288,7 +330,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_auth() {
-        let subreddit = Subreddit::new("astolfo", None);
+        let subreddit = Subreddit::new("astolfo");
 
         // Test feeds
         let hot = subreddit.hot(25, None).await;
