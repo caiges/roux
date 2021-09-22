@@ -63,8 +63,12 @@
 extern crate reqwest;
 extern crate serde_json;
 
+use crate::config::Config;
 use crate::util::{FeedOption, RouxError};
-use reqwest::Client;
+use reqwest::{
+    header::{HeaderMap, USER_AGENT},
+    Client, ClientBuilder,
+};
 
 pub mod responses;
 use responses::{
@@ -112,13 +116,24 @@ pub struct Subreddit {
 
 impl Subreddit {
     /// Create a new `Subreddit` instance.
-    pub fn new(name: &str) -> Subreddit {
+    pub fn new(name: &str, config: Option<Config>) -> Subreddit {
         let subreddit_url = format!("https://www.reddit.com/r/{}", name);
+        let client = match config {
+            Some(config) => {
+                let mut headers = HeaderMap::new();
+                headers.insert(USER_AGENT, config.user_agent[..].parse().unwrap());
+                ClientBuilder::new()
+                    .default_headers(headers)
+                    .build()
+                    .unwrap()
+            }
+            None => Client::new(),
+        };
 
         Subreddit {
             name: name.to_owned(),
             url: subreddit_url,
-            client: Client::new(),
+            client,
         }
     }
 
