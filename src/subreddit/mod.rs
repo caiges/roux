@@ -130,14 +130,14 @@ impl Subreddit {
         }
     }
 
-    /// Create a new `Subreddit` instance.
+    /// Create a new authenticated `Subreddit` instance.
     pub async fn new_authenticated(
         name: &str,
         user_agent: &str,
         client_id: &str,
         client_secret: &str,
     ) -> Result<Subreddit, RouxError> {
-        let subreddit_url = format!("https://www.reddit.com/r/{}", name);
+        let subreddit_url = format!("https://oauth.reddit.com/r/{}", name);
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, user_agent[..].parse().unwrap());
         let client = ClientBuilder::new()
@@ -158,7 +158,6 @@ impl Subreddit {
 
         if response.status() == 200 {
             let auth_data = response.json::<AuthData>().await.unwrap();
-            println!("auth data: {:?}", auth_data);
             let mut headers = HeaderMap::new();
             headers.insert(USER_AGENT, user_agent[..].parse().unwrap());
             headers.insert(
@@ -218,9 +217,6 @@ impl Subreddit {
         }
 
         let res = self.client.get(&url.to_owned()).send().await?;
-
-        println!("{:?}", self.client);
-
         Ok(res.json::<Submissions>().await?)
     }
 
