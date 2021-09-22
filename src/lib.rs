@@ -68,7 +68,8 @@ use serde::Deserialize;
 use reqwest::header::USER_AGENT;
 use reqwest::Client;
 
-mod config;
+/// Client configuration module.
+pub mod config;
 
 /// Subreddit module.
 pub mod subreddit;

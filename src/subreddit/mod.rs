@@ -288,7 +288,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_auth() {
-        let subreddit = Subreddit::new("astolfo");
+        let subreddit = Subreddit::new("astolfo", None);
 
         // Test feeds
         let hot = subreddit.hot(25, None).await;
