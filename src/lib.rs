@@ -71,6 +71,9 @@ use reqwest::Client;
 /// Client configuration module.
 mod config;
 
+// Client module.
+pub mod client;
+
 /// Subreddit module.
 pub mod subreddit;
 pub use subreddit::{Subreddit, Subreddits};
