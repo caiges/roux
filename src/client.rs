@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::subreddit::Subreddit;
 use crate::util::{url, RouxError};
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT},
@@ -101,5 +102,9 @@ impl ClientBuilder {
         } else {
             Err(RouxError::Status(response))
         }
+    }
+
+    pub fn subreddit(name: &str) -> Subreddit {
+        Subreddit::new(name)
     }
 }
