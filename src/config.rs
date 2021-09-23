@@ -1,5 +1,10 @@
+pub const DEFAULT_URL: &str = "https://reddit.com";
+pub const DEAFULT_AUTHENTICATED_URL: &str = "https://oauth.reddit.com";
+
 /// Config can be used to configure clients.
 pub struct Config {
+    /// url for requests
+    pub url: String,
     /// user agent for requests.
     pub user_agent: String,
     /// client id used when authenticating.
@@ -18,6 +23,7 @@ impl Config {
     /// Create a new Config instance.
     pub fn new(user_agent: &str, client_id: &str, client_secret: &str) -> Config {
         Config {
+            url: DEFAULT_URL.to_owned(),
             user_agent: user_agent.to_owned(),
             client_id: client_id.to_owned(),
             client_secret: client_secret.to_owned(),

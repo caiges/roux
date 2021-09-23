@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config;
 use crate::subreddit::Subreddit;
 use crate::util::{url, RouxError};
 use reqwest::{
@@ -13,21 +13,21 @@ struct AuthData {
 }
 
 /// A HTTP client for making requests to the Reddit API.
-pub struct Client {
-    access_token: String,
+pub struct Client<'a> {
     client: ReqwestClient,
+    base_url: &'a str,
 }
 
 /// A builder type for creating configured clients.
 pub struct ClientBuilder {
-    config: Config,
+    config: config::Config,
 }
 
 impl ClientBuilder {
     /// Create a new client builder.
     pub fn new() -> Self {
         Self {
-            config: Config::new("", "", ""),
+            config: config::Config::new("", "", ""),
         }
     }
 
@@ -61,8 +61,25 @@ impl ClientBuilder {
         self
     }
 
+    /// Build a read only client.
+    pub fn readonly(self, user_agent: Option<&str>) -> Client {
+        let mut headers = HeaderMap::new();
+        let ua = user_agent.unwrap_or_else(|| "roux");
+        headers.insert(USER_AGENT, ua[..].parse().unwrap());
+
+        let subreddit_client = ReqwestClientBuilder::new()
+            .default_headers(headers)
+            .build()
+            .unwrap();
+
+        Client {
+            client: subreddit_client,
+            base_url: config::DEFAULT_URL,
+        }
+    }
+
     /// Build the client.
-    pub async fn build(self) -> Result<Client, RouxError> {
+    pub async fn build<'a>(self) -> Result<Client<'a>, RouxError> {
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, self.config.user_agent[..].parse().unwrap());
         let client = ReqwestClientBuilder::new()
@@ -96,8 +113,8 @@ impl ClientBuilder {
                 .unwrap();
 
             Ok(Client {
-                access_token: auth_data.access_token,
                 client: subreddit_client,
+                base_url: config::DEAFULT_AUTHENTICATED_URL,
             })
         } else {
             Err(RouxError::Status(response))
