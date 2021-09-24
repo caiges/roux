@@ -14,6 +14,7 @@ async fn main() -> Result<(), RouxError> {
         .build()
         .await
         .expect("could not build client");
+
     let subreddits = Subreddits::new(&client)
         .search("cats", Some(50), None)
         .await?;
