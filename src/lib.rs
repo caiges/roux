@@ -71,7 +71,7 @@ use reqwest::Client;
 /// Client configuration module.
 mod config;
 
-// Client module.
+/// Client module.
 pub mod client;
 
 /// Subreddit module.
@@ -106,8 +106,12 @@ struct AuthData {
 impl Reddit {
     /// Creates a `Reddit` instance with user_agent, client_id, and client_secret.
     pub fn new(user_agent: &str, client_id: &str, client_secret: &str) -> Reddit {
+        let mut config = config::Config::new();
+        config.user_agent = user_agent.to_owned();
+        config.client_id = Some(client_id.to_owned());
+        config.client_secret = Some(client_secret.to_owned());
         Reddit {
-            config: config::Config::new(user_agent, client_id, client_secret),
+            config,
             client: Client::new(),
         }
     }
@@ -137,7 +141,10 @@ impl Reddit {
             .client
             .post(url)
             .header(USER_AGENT, &self.config.user_agent[..])
-            .basic_auth(&self.config.client_id, Some(&self.config.client_secret))
+            .basic_auth(
+                &self.config.client_id.clone().unwrap(),
+                self.config.client_secret.clone(),
+            )
             .form(&form);
 
         let response = request.send().await?;

@@ -9,6 +9,6 @@ fn main() {
         .client_id(client_id)
         .client_secret(client_secret)
         .build();
-    let submissions = client.subreddit("meow").latest();
-    println!("{:?}", submissions);
+    let subreddits = client.subreddits().search("cats");
+    println!("{:?}", subreddits);
 }

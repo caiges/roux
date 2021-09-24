@@ -229,7 +229,10 @@ impl Me {
         let response = self
             .client
             .post(url)
-            .basic_auth(&self.config.client_id, Some(&self.config.client_secret))
+            .basic_auth(
+                &self.config.client_id.clone().unwrap(),
+                self.config.client_secret.clone(),
+            )
             .form(&form)
             .send()
             .await?;

@@ -1,5 +1,5 @@
 use crate::config;
-use crate::subreddit::Subreddit;
+use crate::subreddit::{Subreddit, Subreddits};
 use crate::util::{url, RouxError};
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT},
@@ -13,9 +13,19 @@ struct AuthData {
 }
 
 /// A HTTP client for making requests to the Reddit API.
-pub struct Client<'a> {
-    client: ReqwestClient,
-    base_url: &'a str,
+pub struct Client {
+    pub client: ReqwestClient,
+    pub config: config::Config,
+}
+
+impl Client {
+    pub fn subreddits<'client>(self) -> Subreddits<'client> {
+        Subreddits::new(&self.client, &self.config)
+    }
+
+    pub fn subreddit<'client>(self, name: &str) -> Subreddit<'client> {
+        Subreddit::new(&self.client, &self.config, name)
+    }
 }
 
 /// A builder type for creating configured clients.
@@ -27,7 +37,7 @@ impl ClientBuilder {
     /// Create a new client builder.
     pub fn new() -> Self {
         Self {
-            config: config::Config::new("", "", ""),
+            config: config::Config::new(),
         }
     }
 
@@ -39,13 +49,13 @@ impl ClientBuilder {
 
     /// Set the client id.
     pub fn client_id(mut self, client_id: &str) -> Self {
-        self.config.client_id = client_id.to_owned();
+        self.config.client_id = Some(client_id.to_owned());
         self
     }
 
     /// Set the client secret.
     pub fn client_secret(mut self, client_secret: &str) -> Self {
-        self.config.client_secret = client_secret.to_owned();
+        self.config.client_secret = Some(client_secret.to_owned());
         self
     }
 
@@ -61,25 +71,8 @@ impl ClientBuilder {
         self
     }
 
-    /// Build a read only client.
-    pub fn readonly(self, user_agent: Option<&str>) -> Client {
-        let mut headers = HeaderMap::new();
-        let ua = user_agent.unwrap_or_else(|| "roux");
-        headers.insert(USER_AGENT, ua[..].parse().unwrap());
-
-        let subreddit_client = ReqwestClientBuilder::new()
-            .default_headers(headers)
-            .build()
-            .unwrap();
-
-        Client {
-            client: subreddit_client,
-            base_url: config::DEFAULT_URL,
-        }
-    }
-
     /// Build the client.
-    pub async fn build<'a>(self) -> Result<Client<'a>, RouxError> {
+    pub async fn build<'a>(self) -> Result<Client, RouxError> {
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, self.config.user_agent[..].parse().unwrap());
         let client = ReqwestClientBuilder::new()
@@ -87,13 +80,23 @@ impl ClientBuilder {
             .build()
             .unwrap();
 
+        if self.config.client_id.is_none() && self.config.client_secret.is_none() {
+            return Ok(Client {
+                client,
+                config: self.config,
+            });
+        }
+
         let url = &url::build_url("api/v1/access_token")[..];
         let form = [("grant_type", "client_credentials")];
 
         let request = client
             .post(url)
             .header(USER_AGENT, &self.config.user_agent[..])
-            .basic_auth(&self.config.client_id, Some(&self.config.client_secret))
+            .basic_auth(
+                &self.config.client_id.clone().unwrap(),
+                self.config.client_secret.clone(),
+            )
             .form(&form);
 
         let response = request.send().await?;
@@ -112,16 +115,12 @@ impl ClientBuilder {
                 .build()
                 .unwrap();
 
-            Ok(Client {
+            return Ok(Client {
                 client: subreddit_client,
-                base_url: config::DEAFULT_AUTHENTICATED_URL,
-            })
+                config: self.config,
+            });
         } else {
-            Err(RouxError::Status(response))
+            return Err(RouxError::Status(response));
         }
-    }
-
-    pub fn subreddit(name: &str) -> Subreddit {
-        Subreddit::new(name)
     }
 }
