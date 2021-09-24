@@ -1,5 +1,4 @@
 use crate::config;
-use crate::subreddit::{Subreddit, Subreddits};
 use crate::util::{url, RouxError};
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT},
@@ -14,18 +13,10 @@ struct AuthData {
 
 /// A HTTP client for making requests to the Reddit API.
 pub struct Client {
+    /// Reqwest client for making HTTP requests.
     pub client: ReqwestClient,
+    /// Configuration for our API requests.
     pub config: config::Config,
-}
-
-impl Client {
-    pub fn subreddits<'client>(self) -> Subreddits<'client> {
-        Subreddits::new(&self.client, &self.config)
-    }
-
-    pub fn subreddit<'client>(self, name: &str) -> Subreddit<'client> {
-        Subreddit::new(&self.client, &self.config, name)
-    }
 }
 
 /// A builder type for creating configured clients.
@@ -72,7 +63,7 @@ impl ClientBuilder {
     }
 
     /// Build the client.
-    pub async fn build<'a>(self) -> Result<Client, RouxError> {
+    pub async fn build<'a>(mut self) -> Result<Client, RouxError> {
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, self.config.user_agent[..].parse().unwrap());
         let client = ReqwestClientBuilder::new()
@@ -115,6 +106,7 @@ impl ClientBuilder {
                 .build()
                 .unwrap();
 
+            self.config.url = config::DEAFULT_AUTHENTICATED_URL.to_owned();
             return Ok(Client {
                 client: subreddit_client,
                 config: self.config,

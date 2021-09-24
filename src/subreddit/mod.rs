@@ -81,13 +81,14 @@ struct AuthData {
 
 /// Access subreddits API
 pub struct Subreddits<'client> {
-    pub client: &'client Client,
-    pub config: &'client Config,
+    /// Client for making API requests.
+    pub client: &'client client::Client,
 }
 
 impl<'client> Subreddits<'client> {
-    pub fn new(client: &'client Client, config: &'client Config) -> Self {
-        Self { client, config }
+    /// Create a new Subreddits type.
+    pub fn new(client: &'client client::Client) -> Self {
+        Self { client }
     }
 
     /// Search subreddits
@@ -97,7 +98,10 @@ impl<'client> Subreddits<'client> {
         limit: Option<u32>,
         options: Option<FeedOption>,
     ) -> Result<SubredditsListing, RouxError> {
-        let url = &mut format!("https://www.reddit.com/subreddits/search.json?q={}", name);
+        let url = &mut format!(
+            "{}/subreddits/search.json?q={}",
+            self.client.config.url, name
+        );
 
         if let Some(limit) = limit {
             url.push_str(&format!("&limit={}", limit));
@@ -108,6 +112,7 @@ impl<'client> Subreddits<'client> {
         }
 
         Ok(self
+            .client
             .client
             .get(&url.to_owned())
             .send()
@@ -122,19 +127,17 @@ pub struct Subreddit<'client> {
     /// Name of subreddit.
     pub name: String,
     url: String,
-    client: &'client Client,
-    config: &'client Config,
+    client: &'client client::Client,
 }
 
 impl<'client> Subreddit<'client> {
     /// Create a new `Subreddit` instance.
-    pub fn new(client: &'client Client, config: &'client Config, name: &str) -> Subreddit<'client> {
+    pub fn new(client: &'client client::Client, name: &str) -> Subreddit<'client> {
         let subreddit_url = format!("/r/{}", name);
         Subreddit {
             name: name.to_owned(),
             url: subreddit_url,
             client,
-            config,
         }
     }
 
@@ -143,7 +146,11 @@ impl<'client> Subreddit<'client> {
         // TODO: getting moderators require you to be logged in now
         Ok(self
             .client
-            .get(&format!("{}/about/moderators/.json", self.config.url))
+            .client
+            .get(&format!(
+                "{}/about/moderators/.json",
+                self.client.config.url
+            ))
             .send()
             .await?
             .json::<Moderators>()
@@ -153,6 +160,7 @@ impl<'client> Subreddit<'client> {
     /// Get subreddit data.
     pub async fn about(&self) -> Result<SubredditData, RouxError> {
         Ok(self
+            .client
             .client
             .get(&format!("{}/about/.json", self.url))
             .send()
@@ -174,7 +182,7 @@ impl<'client> Subreddit<'client> {
             options.build_url(url);
         }
 
-        let res = self.client.get(&url.to_owned()).send().await?;
+        let res = self.client.client.get(&url.to_owned()).send().await?;
         Ok(res.json::<Submissions>().await?)
     }
 
@@ -201,6 +209,7 @@ impl<'client> Subreddit<'client> {
         if url.contains("comments/") {
             let mut comments = self
                 .client
+                .client
                 .get(&url.to_owned())
                 .send()
                 .await?
@@ -210,6 +219,7 @@ impl<'client> Subreddit<'client> {
             Ok(comments.pop().unwrap())
         } else {
             Ok(self
+                .client
                 .client
                 .get(&url.to_owned())
                 .send()
