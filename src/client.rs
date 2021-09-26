@@ -5,7 +5,6 @@ use reqwest::{
     Client as ReqwestClient, ClientBuilder as ReqwestClientBuilder,
 };
 use serde::Deserialize;
-use std::time::Duration;
 
 #[derive(Deserialize, Debug)]
 struct AuthData {
@@ -74,9 +73,7 @@ impl ClientBuilder {
         );
         let client = ReqwestClientBuilder::new()
             .default_headers(headers)
-            .connection_verbose(true)
-            .pool_max_idle_per_host(0)
-            .tcp_keepalive(Duration::new(60, 0))
+            .use_rustls_tls()
             .build()
             .unwrap();
 
@@ -114,6 +111,7 @@ impl ClientBuilder {
 
             let subreddit_client = ReqwestClientBuilder::new()
                 .default_headers(headers)
+                .use_rustls_tls()
                 .build()
                 .unwrap();
 

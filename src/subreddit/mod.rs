@@ -179,8 +179,6 @@ impl<'client> Subreddit<'client> {
             self.client.config.url, self.url, ty, limit
         );
 
-        println!("{}", url);
-
         if let Some(options) = options {
             options.build_url(url);
         }
