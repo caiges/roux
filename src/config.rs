@@ -24,7 +24,7 @@ impl Config {
     pub fn new() -> Self {
         Self {
             url: DEFAULT_URL.to_owned(),
-            user_agent: "roux".to_string(),
+            user_agent: "rust:github.com/caiges/roux:v1.3.6".to_string(),
             client_id: None,
             client_secret: None,
             username: None,

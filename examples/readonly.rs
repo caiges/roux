@@ -7,9 +7,9 @@ use roux::util::RouxError;
 async fn main() -> Result<(), RouxError> {
     env_logger::init();
 
-    let client = ClientBuilder::new().user_agent("roux-demo").build().await?;
+    let client = ClientBuilder::new().build().await?;
 
-    let submissions = Subreddit::new(&client, "golang").top(50, None).await?;
+    let submissions = Subreddit::new(&client, "golang").top(100, None).await?;
 
     for submission in submissions.data.children.iter() {
         println!("{}", submission.data.title);

@@ -5,6 +5,7 @@ use reqwest::{
     Client as ReqwestClient, ClientBuilder as ReqwestClientBuilder,
 };
 use serde::Deserialize;
+use std::time::Duration;
 
 #[derive(Deserialize, Debug)]
 struct AuthData {
@@ -65,7 +66,7 @@ impl ClientBuilder {
     /// Build the client.
     pub async fn build<'a>(mut self) -> Result<Client, RouxError> {
         let mut headers = HeaderMap::new();
-        //headers.insert(USER_AGENT, self.config.user_agent[..].parse().unwrap());
+        headers.insert(USER_AGENT, self.config.user_agent[..].parse().unwrap());
         headers.insert(ACCEPT, "application/json"[..].parse().unwrap());
         headers.insert(
             CONTENT_TYPE,
@@ -74,6 +75,8 @@ impl ClientBuilder {
         let client = ReqwestClientBuilder::new()
             .default_headers(headers)
             .connection_verbose(true)
+            .pool_max_idle_per_host(0)
+            .tcp_keepalive(Duration::new(60, 0))
             .build()
             .unwrap();
 
