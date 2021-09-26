@@ -64,11 +64,9 @@ extern crate reqwest;
 extern crate serde_json;
 
 use crate::client;
-use crate::config::Config;
 use crate::util::{FeedOption, RouxError};
 
 pub mod responses;
-use reqwest::Client;
 use responses::{
     Moderators, Submissions, SubredditComments, SubredditData, SubredditResponse, SubredditsListing,
 };
@@ -176,7 +174,12 @@ impl<'client> Subreddit<'client> {
         limit: u32,
         options: Option<FeedOption>,
     ) -> Result<Submissions, RouxError> {
-        let url = &mut format!("{}/{}.json?limit={}", self.url, ty, limit);
+        let url = &mut format!(
+            "{}{}/{}.json?limit={}&t=all",
+            self.client.config.url, self.url, ty, limit
+        );
+
+        println!("{}", url);
 
         if let Some(options) = options {
             options.build_url(url);

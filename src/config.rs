@@ -1,5 +1,5 @@
 pub const DEFAULT_URL: &str = "https://reddit.com";
-pub const DEAFULT_AUTHENTICATED_URL: &str = "https://oauth.reddit.com";
+pub const DEFAULT_AUTHENTICATED_URL: &str = "https://oauth.reddit.com";
 
 /// Config can be used to configure clients.
 pub struct Config {

@@ -1,7 +1,7 @@
 use crate::config;
 use crate::util::{url, RouxError};
 use reqwest::{
-    header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT},
+    header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, CONTENT_TYPE, USER_AGENT},
     Client as ReqwestClient, ClientBuilder as ReqwestClientBuilder,
 };
 use serde::Deserialize;
@@ -65,9 +65,15 @@ impl ClientBuilder {
     /// Build the client.
     pub async fn build<'a>(mut self) -> Result<Client, RouxError> {
         let mut headers = HeaderMap::new();
-        headers.insert(USER_AGENT, self.config.user_agent[..].parse().unwrap());
+        //headers.insert(USER_AGENT, self.config.user_agent[..].parse().unwrap());
+        headers.insert(ACCEPT, "application/json"[..].parse().unwrap());
+        headers.insert(
+            CONTENT_TYPE,
+            "application/x-www-form-urlencoded"[..].parse().unwrap(),
+        );
         let client = ReqwestClientBuilder::new()
             .default_headers(headers)
+            .connection_verbose(true)
             .build()
             .unwrap();
 
@@ -100,13 +106,15 @@ impl ClientBuilder {
                 AUTHORIZATION,
                 HeaderValue::from_str(&format!("Bearer {}", auth_data.access_token)).unwrap(),
             );
+            headers.insert(ACCEPT, "application/json"[..].parse().unwrap());
+            headers.insert(CONTENT_TYPE, "application/json"[..].parse().unwrap());
 
             let subreddit_client = ReqwestClientBuilder::new()
                 .default_headers(headers)
                 .build()
                 .unwrap();
 
-            self.config.url = config::DEAFULT_AUTHENTICATED_URL.to_owned();
+            self.config.url = config::DEFAULT_AUTHENTICATED_URL.to_owned();
             return Ok(Client {
                 client: subreddit_client,
                 config: self.config,
