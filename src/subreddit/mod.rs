@@ -160,7 +160,10 @@ impl<'client> Subreddit<'client> {
         Ok(self
             .client
             .client
-            .get(&format!("{}/about/.json", self.url))
+            .get(&format!(
+                "{}{}/about/.json",
+                self.client.config.url, self.url
+            ))
             .send()
             .await?
             .json::<SubredditResponse>()
@@ -193,7 +196,7 @@ impl<'client> Subreddit<'client> {
         depth: Option<u32>,
         limit: Option<u32>,
     ) -> Result<SubredditComments, RouxError> {
-        let url = &mut format!("{}/{}.json?", self.url, ty);
+        let url = &mut format!("{}{}/{}.json?", self.client.config.url, self.url, ty);
 
         if let Some(depth) = depth {
             url.push_str(&format!("&depth={}", depth));
@@ -289,13 +292,15 @@ impl<'client> Subreddit<'client> {
 
 #[cfg(test)]
 mod tests {
+    use super::client::ClientBuilder;
     use super::Subreddit;
     use super::Subreddits;
     use tokio;
 
-    /*    #[tokio::test]
+    #[tokio::test]
     async fn test_no_auth() {
-        let subreddit = Subreddit::new("astolfo");
+        let client = ClientBuilder::new().build().await.unwrap();
+        let subreddit = Subreddit::new(&client, "astolfo");
 
         // Test feeds
         let hot = subreddit.hot(25, None).await;
@@ -325,8 +330,10 @@ mod tests {
 
         // Test subreddit search
         let subreddits_limit = 3u32;
-        let subreddits = Subreddits::search("rust", Some(subreddits_limit), None).await;
+        let subreddits = Subreddits::new(&client)
+            .search("rust", Some(subreddits_limit), None)
+            .await;
         assert!(subreddits.is_ok());
         assert!(subreddits.unwrap().data.children.len() == subreddits_limit as usize);
-    }*/
+    }
 }

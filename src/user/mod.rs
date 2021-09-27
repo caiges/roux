@@ -25,26 +25,26 @@
 extern crate reqwest;
 extern crate serde_json;
 
+use crate::client::Client;
 use crate::util::RouxError;
-use reqwest::Client;
 
 pub mod responses;
 use crate::subreddit::responses::{Submissions, SubredditComments};
 use responses::Overview;
 
 /// User.
-pub struct User {
+pub struct User<'client> {
     /// User's name.
     pub user: String,
-    client: Client,
+    client: &'client Client,
 }
 
-impl User {
+impl<'client> User<'client> {
     /// Create a new `User` instance.
-    pub fn new(user: &str) -> User {
+    pub fn new(client: &'client Client, user: &str) -> User<'client> {
         User {
             user: user.to_owned(),
-            client: Client::new(),
+            client,
         }
     }
 
@@ -52,9 +52,10 @@ impl User {
     pub async fn overview(&self) -> Result<Overview, RouxError> {
         Ok(self
             .client
+            .client
             .get(&format!(
-                "https://www.reddit.com/user/{}/overview/.json",
-                self.user
+                "{}/user/{}/overview.json",
+                self.client.config.url, self.user
             ))
             .send()
             .await?
@@ -65,6 +66,7 @@ impl User {
     /// Get user's submitted posts.
     pub async fn submitted(&self) -> Result<Submissions, RouxError> {
         Ok(self
+            .client
             .client
             .get(&format!(
                 "https://www.reddit.com/user/{}/submitted/.json",
@@ -80,6 +82,7 @@ impl User {
     pub async fn comments(&self) -> Result<SubredditComments, RouxError> {
         Ok(self
             .client
+            .client
             .get(&format!(
                 "https://www.reddit.com/user/{}/comments/.json",
                 self.user
@@ -94,11 +97,13 @@ impl User {
 #[cfg(test)]
 mod tests {
     use super::User;
+    use crate::client::ClientBuilder;
     use tokio;
 
     #[tokio::test]
     async fn test_no_auth() {
-        let user = User::new("beneater");
+        let client = ClientBuilder::new().build().await.unwrap();
+        let user = User::new(&client, "beneater");
 
         // Test overview
         let overview = user.overview().await;
