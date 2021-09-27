@@ -25,37 +25,37 @@
 extern crate reqwest;
 extern crate serde_json;
 
-use crate::client::Client;
 use crate::util::RouxError;
+use crate::Reddit;
 
 pub mod responses;
 use crate::subreddit::responses::{Submissions, SubredditComments};
 use responses::Overview;
 
 /// User.
-pub struct User<'client> {
+pub struct User<'reddit> {
     /// User's name.
     pub user: String,
-    client: &'client Client,
+    reddit: &'reddit Reddit,
 }
 
-impl<'client> User<'client> {
+impl<'reddit> User<'reddit> {
     /// Create a new `User` instance.
-    pub fn new(client: &'client Client, user: &str) -> User<'client> {
+    pub fn new(reddit: &'reddit Reddit, user: &str) -> User<'reddit> {
         User {
             user: user.to_owned(),
-            client,
+            reddit,
         }
     }
 
     /// Get user's overview.
     pub async fn overview(&self) -> Result<Overview, RouxError> {
         Ok(self
-            .client
+            .reddit
             .client
             .get(&format!(
                 "{}/user/{}/overview.json",
-                self.client.config.url, self.user
+                self.reddit.config.url, self.user
             ))
             .send()
             .await?
@@ -66,7 +66,7 @@ impl<'client> User<'client> {
     /// Get user's submitted posts.
     pub async fn submitted(&self) -> Result<Submissions, RouxError> {
         Ok(self
-            .client
+            .reddit
             .client
             .get(&format!(
                 "https://www.reddit.com/user/{}/submitted/.json",
@@ -81,7 +81,7 @@ impl<'client> User<'client> {
     /// Get user's submitted comments.
     pub async fn comments(&self) -> Result<SubredditComments, RouxError> {
         Ok(self
-            .client
+            .reddit
             .client
             .get(&format!(
                 "https://www.reddit.com/user/{}/comments/.json",
@@ -97,13 +97,13 @@ impl<'client> User<'client> {
 #[cfg(test)]
 mod tests {
     use super::User;
-    use crate::client::ClientBuilder;
+    use crate::RedditBuilder;
     use tokio;
 
     #[tokio::test]
     async fn test_no_auth() {
-        let client = ClientBuilder::new().build().await.unwrap();
-        let user = User::new(&client, "beneater");
+        let reddit = RedditBuilder::new().build().await.unwrap();
+        let user = User::new(&reddit, "beneater");
 
         // Test overview
         let overview = user.overview().await;

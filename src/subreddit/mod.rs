@@ -63,8 +63,8 @@
 extern crate reqwest;
 extern crate serde_json;
 
-use crate::client;
 use crate::util::{FeedOption, RouxError};
+use crate::Reddit;
 
 pub mod responses;
 use responses::{
@@ -78,15 +78,15 @@ struct AuthData {
 }
 
 /// Access subreddits API
-pub struct Subreddits<'client> {
+pub struct Subreddits<'reddit> {
     /// Client for making API requests.
-    pub client: &'client client::Client,
+    pub reddit: &'reddit Reddit,
 }
 
-impl<'client> Subreddits<'client> {
+impl<'reddit> Subreddits<'reddit> {
     /// Create a new Subreddits type.
-    pub fn new(client: &'client client::Client) -> Self {
-        Self { client }
+    pub fn new(reddit: &'reddit Reddit) -> Self {
+        Self { reddit }
     }
 
     /// Search subreddits
@@ -98,7 +98,7 @@ impl<'client> Subreddits<'client> {
     ) -> Result<SubredditsListing, RouxError> {
         let url = &mut format!(
             "{}/subreddits/search.json?q={}",
-            self.client.config.url, name
+            self.reddit.config.url, name
         );
 
         if let Some(limit) = limit {
@@ -110,7 +110,7 @@ impl<'client> Subreddits<'client> {
         }
 
         Ok(self
-            .client
+            .reddit
             .client
             .get(&url.to_owned())
             .send()
@@ -121,21 +121,21 @@ impl<'client> Subreddits<'client> {
 }
 
 /// Subreddit
-pub struct Subreddit<'client> {
+pub struct Subreddit<'reddit> {
     /// Name of subreddit.
     pub name: String,
     url: String,
-    client: &'client client::Client,
+    reddit: &'reddit Reddit,
 }
 
-impl<'client> Subreddit<'client> {
+impl<'reddit> Subreddit<'reddit> {
     /// Create a new `Subreddit` instance.
-    pub fn new(client: &'client client::Client, name: &str) -> Subreddit<'client> {
+    pub fn new(reddit: &'reddit Reddit, name: &str) -> Subreddit<'reddit> {
         let subreddit_url = format!("/r/{}", name);
         Subreddit {
             name: name.to_owned(),
             url: subreddit_url,
-            client,
+            reddit,
         }
     }
 
@@ -143,11 +143,11 @@ impl<'client> Subreddit<'client> {
     pub async fn moderators(&self) -> Result<Moderators, RouxError> {
         // TODO: getting moderators require you to be logged in now
         Ok(self
-            .client
+            .reddit
             .client
             .get(&format!(
                 "{}/about/moderators/.json",
-                self.client.config.url
+                self.reddit.config.url
             ))
             .send()
             .await?
@@ -158,11 +158,11 @@ impl<'client> Subreddit<'client> {
     /// Get subreddit data.
     pub async fn about(&self) -> Result<SubredditData, RouxError> {
         Ok(self
-            .client
+            .reddit
             .client
             .get(&format!(
                 "{}{}/about/.json",
-                self.client.config.url, self.url
+                self.reddit.config.url, self.url
             ))
             .send()
             .await?
@@ -179,14 +179,14 @@ impl<'client> Subreddit<'client> {
     ) -> Result<Submissions, RouxError> {
         let url = &mut format!(
             "{}{}/{}.json?limit={}&t=all",
-            self.client.config.url, self.url, ty, limit
+            self.reddit.config.url, self.url, ty, limit
         );
 
         if let Some(options) = options {
             options.build_url(url);
         }
 
-        let res = self.client.client.get(&url.to_owned()).send().await?;
+        let res = self.reddit.client.get(&url.to_owned()).send().await?;
         Ok(res.json::<Submissions>().await?)
     }
 
@@ -196,7 +196,7 @@ impl<'client> Subreddit<'client> {
         depth: Option<u32>,
         limit: Option<u32>,
     ) -> Result<SubredditComments, RouxError> {
-        let url = &mut format!("{}{}/{}.json?", self.client.config.url, self.url, ty);
+        let url = &mut format!("{}{}/{}.json?", self.reddit.config.url, self.url, ty);
 
         if let Some(depth) = depth {
             url.push_str(&format!("&depth={}", depth));
@@ -212,7 +212,7 @@ impl<'client> Subreddit<'client> {
         // being same hash map as the one for subreddits...
         if url.contains("comments/") {
             let mut comments = self
-                .client
+                .reddit
                 .client
                 .get(&url.to_owned())
                 .send()
@@ -223,7 +223,7 @@ impl<'client> Subreddit<'client> {
             Ok(comments.pop().unwrap())
         } else {
             Ok(self
-                .client
+                .reddit
                 .client
                 .get(&url.to_owned())
                 .send()
@@ -292,15 +292,15 @@ impl<'client> Subreddit<'client> {
 
 #[cfg(test)]
 mod tests {
-    use super::client::ClientBuilder;
     use super::Subreddit;
     use super::Subreddits;
+    use crate::RedditBuilder;
     use tokio;
 
     #[tokio::test]
     async fn test_no_auth() {
-        let client = ClientBuilder::new().build().await.unwrap();
-        let subreddit = Subreddit::new(&client, "astolfo");
+        let reddit = RedditBuilder::new().build().await.unwrap();
+        let subreddit = Subreddit::new(&reddit, "astolfo");
 
         // Test feeds
         let hot = subreddit.hot(25, None).await;
@@ -330,7 +330,7 @@ mod tests {
 
         // Test subreddit search
         let subreddits_limit = 3u32;
-        let subreddits = Subreddits::new(&client)
+        let subreddits = Subreddits::new(&reddit)
             .search("rust", Some(subreddits_limit), None)
             .await;
         assert!(subreddits.is_ok());
