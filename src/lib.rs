@@ -3,7 +3,28 @@
 //! # roux.rs
 //! This crate provides simple access to the Reddit API.
 //!
-//! ## Readonly
+//! # Using OAuth
+//! To create an OAuth client set `client_id` and `client_secret`:
+//! ```no_run
+//! use roux::Reddit;
+//! # use tokio_test;
+//!
+//! # tokio_test::block_on(async {
+//! let client = Reddit::new("USER_AGENT", "CLIENT_ID", "CLIENT_SECRET")
+//!     .client_id("your-client-id")
+//!     .client_secret("your-client-secret")
+//!     .build()
+//!     .await;
+//!
+//! let me = client.unwrap();
+//! # })
+//! ```
+//! It is important that you pick a good user agent. The ideal format is
+//! `platform:program:version (by /u/yourname)`, e.g. `macos:roux:v0.3.0 (by /u/beanpup_py)`.
+//!
+//! This will authticate you as the user given in the username function.
+//!
+//! # Readonly
 //! To create a readonly client, don't set `client_id` or `client_secret`:
 //! ```no_run
 //! let client = RedditBuilder::new()
@@ -15,31 +36,7 @@
 //!     .await?;
 //! ```
 //!
-//! ## Using OAuth
-//! To create an OAuth client with the reddit API, use the `Reddit` class.
-//! ```no_run
-//! use roux::Reddit;
-//! # use tokio_test;
-//!
-//! # tokio_test::block_on(async {
-//! let client = Reddit::new("USER_AGENT", "CLIENT_ID", "CLIENT_SECRET")
-//!     .username("USERNAME")
-//!     .password("PASSWORD")
-//!     .login()
-//!     .await;
-//!
-//! let me = client.unwrap();
-//! # })
-//! ```
-//! It is important that you pick a good user agent. The ideal format is
-//! `platform:program:version (by /u/yourname)`, e.g. `macos:roux:v0.3.0 (by /u/beanpup_py)`.
-//!
-//! This will authticate you as the user given in the username function.
-//!
-//! ## Usage
-//! Using the OAuth client, you can:
-//!
-//! ### Submit A Text Post
+//! # Submit A Text Post
 //! ```no_run
 //! use roux::Reddit;
 //! # use tokio_test;
@@ -57,7 +54,7 @@
 //! # })
 //! ```
 //!
-//! ### Submit A Link Post
+//! # Submit A Link Post
 //! ```no_run
 //! use roux::Reddit;
 //! # use tokio_test;
