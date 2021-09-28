@@ -1,36 +1,9 @@
-//! # User
-//! A read-only module to read data from for a specific user.
-//!
-//! # Usage
-//! ```rust
-//! use roux::User;
-//! use tokio;
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     let user = User::new("beanpup_py");
-//!     // Now you are able to:
-//!
-//!     // Get overview
-//!     let overview = user.overview().await;
-//!
-//!     // Get submitted posts.
-//!     let submitted = user.submitted().await;
-//!
-//!     // Get comments.
-//!     let comments = user.comments().await;
-//! }
-//! ```
-
-extern crate reqwest;
-extern crate serde_json;
-
+use crate::subreddit::responses::{Submissions, SubredditComments};
 use crate::util::RouxError;
 use crate::Reddit;
+use responses::Overview;
 
 pub mod responses;
-use crate::subreddit::responses::{Submissions, SubredditComments};
-use responses::Overview;
 
 /// User.
 pub struct User<'reddit> {

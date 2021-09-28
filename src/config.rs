@@ -1,4 +1,4 @@
-pub const DEFAULT_URL: &str = "https://reddit.com";
+pub const DEFAULT_URL: &str = "https://www.reddit.com";
 pub const DEFAULT_AUTHENTICATED_URL: &str = "https://oauth.reddit.com";
 
 /// Config can be used to configure clients.

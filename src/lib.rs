@@ -142,7 +142,7 @@ pub struct Reddit {
 impl Reddit {
     /// Login as a user.
     pub async fn login(self) -> Result<me::Me, RouxError> {
-        let url = format!("{}/api/v1/access_token", self.config.url);
+        let url = format!("{}/api/v1/access_token", config::DEFAULT_URL);
         let form = [
             ("grant_type", "password"),
             ("username", &self.config.username.to_owned().unwrap()),
