@@ -6,70 +6,95 @@
 //! # Using OAuth
 //! To create an OAuth client set `client_id` and `client_secret`:
 //! ```no_run
-//! use roux::Reddit;
-//! # use tokio_test;
+//! use roux::subreddit::Subreddits;
+//! use roux::util::RouxError;
+//! use roux::RedditBuilder;
+//! use std::env::var;
 //!
-//! # tokio_test::block_on(async {
-//! let client = Reddit::new("USER_AGENT", "CLIENT_ID", "CLIENT_SECRET")
-//!     .client_id("your-client-id")
-//!     .client_secret("your-client-secret")
-//!     .build()
-//!     .await;
+//! #[tokio::main]
+//! async fn main() -> Result<(), RouxError> {
+//!     let client_id = var("CLIENT_ID").unwrap();
+//!     let client_secret = var("CLIENT_SECRET").unwrap();
+//!     let reddit = RedditBuilder::new()
+//!         .user_agent("roux-demo")
+//!         .client_id(&client_id)
+//!         .client_secret(&client_secret)
+//!         .build()
+//!         .await?;
 //!
-//! let me = client.unwrap();
-//! # })
+//!     let subreddits = Subreddits::new(&reddit)
+//!         .search("cats", Some(50), None)
+//!         .await?;
+//!
+//!     for subreddit in subreddits.data.children.iter() {
+//!         println!("{}", subreddit.data.title.as_ref().unwrap());
+//!     }
+//!     Ok(())
+//! }
 //! ```
-//! It is important that you pick a good user agent. The ideal format is
-//! `platform:program:version (by /u/yourname)`, e.g. `macos:roux:v0.3.0 (by /u/beanpup_py)`.
-//!
-//! This will authticate you as the user given in the username function.
 //!
 //! # Readonly
 //! To create a readonly client, don't set `client_id` or `client_secret`:
 //! ```no_run
-//! let client = RedditBuilder::new()
-//!     .user_agent("linux:roux:v1.3.8 (by /u/blars_tacoman)")
-//!     .build()
-//!     .await?;
-//! let subreddits = Subreddits::new(&reddit)
-//!     .search("cats", Some(50), None)
-//!     .await?;
+//! use roux::subreddit::Subreddit;
+//! use roux::util::RouxError;
+//! use roux::RedditBuilder;
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), RouxError> {
+//!     let reddit = RedditBuilder::new().build().await?;
+//!     let submissions = Subreddit::new(&reddit, "golang").top(100, None).await?;
+//!
+//!     for submission in submissions.data.children.iter() {
+//!         println!("{}", submission.data.title);
+//!     }
+//!
+//!     Ok(())
+//! }
 //! ```
 //!
 //! # Submit A Text Post
 //! ```no_run
-//! use roux::Reddit;
-//! # use tokio_test;
+//! use roux::util::RouxError;
+//! use roux::RedditBuilder;
 //!
-//! # tokio_test::block_on(async {
-//! let client = Reddit::new("USER_AGENT", "CLIENT_ID", "CLIENT_SECRET")
-//!     .username("USERNAME")
-//!     .password("PASSWORD")
-//!     .login()
-//!     .await;
+//! #[tokio::main]
+//! async fn main() -> Result<(), RouxError> {
+//!     let me = RedditBuilder::new()
+//!         .user_agent("super-reddit-bot:1.6.3 by /u/blarstacoman")
+//!         .username("blarstacoman")
+//!         .password("supersecret")
+//!         .build()
+//!         .await?
+//!         .login()
+//!         .await?;
 //!
-//! let me = client.unwrap();
+//!     me.submit_text("Chicken Katsu Curry", "Chicken katsu recipe", "food").await?;
 //!
-//! me.submit_text("TEXT_TITLE", "TEXT_BODY", "SUBREDDIT");
-//! # })
+//!     Ok(())
+//! }
 //! ```
 //!
 //! # Submit A Link Post
 //! ```no_run
-//! use roux::Reddit;
-//! # use tokio_test;
+//! use roux::util::RouxError;
+//! use roux::RedditBuilder;
 //!
-//! # tokio_test::block_on(async {
-//! let client = Reddit::new("USER_AGENT", "CLIENT_ID", "CLIENT_SECRET")
-//!     .username("USERNAME")
-//!     .password("PASSWORD")
-//!     .login()
-//!     .await;
+//! #[tokio::main]
+//! async fn main() -> Result<(), RouxError> {
+//!     let me = RedditBuilder::new()
+//!         .user_agent("super-reddit-bot:1.6.3 by /u/blarstacoman")
+//!         .username("blarstacoman")
+//!         .password("supersecret")
+//!         .build()
+//!         .await?
+//!         .login()
+//!         .await?;
 //!
-//! let me = client.unwrap();
+//!     me.submit_link("Some neato link", "https://neatolink.com", "pics");
 //!
-//! me.submit_link("LINK_TITLE", "LINK", "SUBREDDIT");
-//! # })
+//!     Ok(())
+//! }
 //! ```
 
 use serde::Deserialize;
