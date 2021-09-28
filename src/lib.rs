@@ -3,6 +3,18 @@
 //! # roux.rs
 //! This crate provides simple access to the Reddit API.
 //!
+//! ## Readonly
+//! To create a readonly client, don't set `client_id` or `client_secret`:
+//! ```no_run
+//! let client = RedditBuilder::new()
+//!     .user_agent("linux:roux:v1.3.8 (by /u/blars_tacoman)")
+//!     .build()
+//!     .await?;
+//! let subreddits = Subreddits::new(&reddit)
+//!     .search("cats", Some(50), None)
+//!     .await?;
+//! ```
+//!
 //! ## Using OAuth
 //! To create an OAuth client with the reddit API, use the `Reddit` class.
 //! ```no_run
