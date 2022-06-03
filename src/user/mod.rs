@@ -1,8 +1,10 @@
-use crate::subreddit::responses::{Submissions, SubredditComments};
+use crate::subreddit::responses::{Submissions, SubredditComments, SubmissionsData};
 use crate::util::RouxError;
 use crate::Reddit;
+use crate::requests::AfterState;
 use futures::stream;
-use futures::stream::Stream;
+use futures::stream::{Stream, StreamExt};
+use std::pin::Pin;
 use responses::Overview;
 
 pub mod responses;
@@ -69,28 +71,45 @@ impl<'reddit> User<'reddit> {
     }
 
     /// items returns a stream for user submissions.
-    pub fn items(&self) -> impl Stream<Item = Submissions> + '_ {
-        stream::unfold("", move |state| async move {
-            match self
-                .reddit
-                .client
-                .get(&format!(
-                    "https://www.reddit.com/user/{}/submitted/.json?after={}",
-                    self.user, state
-                ))
-                .send()
-                .await
-            {
-                Ok(r) => match r.json::<Submissions>().await {
-                    Ok(subs) => {
-                        //let after = subs.data.after.unwrap();
-                        Some((subs, "foobs"))
-                    }
+    pub fn items(&self, after: AfterState) -> Pin<Box<dyn Stream<Item = SubmissionsData> + '_>> {
+        Box::pin(
+            stream::unfold(after, move |state| async move {
+                let af = match state {
+                    AfterState::Start(a) => a,
+                    AfterState::Next(a) => Some(a),
+                    AfterState::End => return None,
+                };
+
+                let url = match af {
+                    Some(a) => format!(
+                        "https://oauth.reddit.com/user/{}/submitted.json?after={}",
+                        self.user, a
+                    ),
+                    None => format!("https://oauth.reddit.com/user/{}/submitted.json", self.user),
+                };
+
+                match self.reddit.client.get(&url).send().await {
+                    Ok(r) => match r.json::<Submissions>().await {
+                        Ok(subs) => {
+                            let next_after = match subs.data.after {
+                                Some(a) => AfterState::Next(a),
+                                None => AfterState::End,
+                            };
+
+                            Some((
+                                stream::iter(subs.data.children.into_iter().map(move |c| c.data)),
+                                next_after,
+                            ))
+                        }
+                        Err(e) => {
+                            println!("err getting submissions: {}", e);
+                            None
+                        },
+                    },
                     Err(_) => None,
-                },
-                Err(_) => None,
-            }
-        })
+                }
+            }).flatten(),
+        )
     }
 }
 

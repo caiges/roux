@@ -21,3 +21,13 @@ pub trait Paginate<T> {
     /// take
     fn take(&self, options: PaginationOptions) -> BasicListing<T>;
 }
+
+/// AfterState represents the various start, next and end states for the continuation of fetching paginated reddit resources.
+pub enum AfterState {
+    /// Start represents a starting point for the "after" value provided when fetching paginated reddit resources. It might be an existing resource name or None.
+    Start(Option<String>),
+    /// Next represents the "next" state for continuation. This would be in the middle of fetching paginated resources where we absolutely still have another "after" value to use.
+    Next(String),
+    /// End represents that we no longer have an after value and should not continue.
+    End,
+}
