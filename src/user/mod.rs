@@ -2,7 +2,7 @@ use crate::subreddit::responses::{Submissions, SubredditComments};
 use crate::util::RouxError;
 use crate::Reddit;
 use futures::stream;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::Stream;
 use responses::Overview;
 
 pub mod responses;
@@ -73,6 +73,7 @@ impl<'reddit> User<'reddit> {
         stream::unfold("", move |state| async move {
             match self
                 .reddit
+                .client
                 .get(&format!(
                     "https://www.reddit.com/user/{}/submitted/.json?after={}",
                     self.user, state
