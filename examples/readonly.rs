@@ -1,6 +1,6 @@
-use roux::subreddit::Subreddit;
-use roux::util::RouxError;
-use roux::RedditBuilder;
+use ruhroux::subreddit::Subreddit;
+use ruhroux::util::RouxError;
+use ruhroux::RedditBuilder;
 
 #[tokio::main]
 async fn main() -> Result<(), RouxError> {

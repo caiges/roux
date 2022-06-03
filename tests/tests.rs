@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use roux::{util::RouxError, RedditBuilder};
+    use ruhroux::{util::RouxError, RedditBuilder};
     use tokio;
 
     static USER_AGENT: &str = "super-reddit-bot:1.6.3 by /u/blarstacoman";

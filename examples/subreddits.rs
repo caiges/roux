@@ -1,6 +1,6 @@
-use roux::subreddit::Subreddits;
-use roux::util::RouxError;
-use roux::RedditBuilder;
+use ruhroux::subreddit::Subreddits;
+use ruhroux::util::RouxError;
+use ruhroux::RedditBuilder;
 use std::env::var;
 
 #[tokio::main]

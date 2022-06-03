@@ -70,7 +70,6 @@ There are also read-only modules that don't need authentication:
 ## Features
 
 - (Default) `tokio_new` - use tokio 1.1.0 based reqwest.
-- `tokio_back_compat` - use tokio 0.2 based reqwest.
 
 ## Contributing
 

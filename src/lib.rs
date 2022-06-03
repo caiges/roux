@@ -1,14 +1,14 @@
 #![deny(missing_docs)]
 
-//! # roux.rs
+//! # ruhroux.rs
 //! This crate provides simple access to the Reddit API.
 //!
 //! # Using OAuth
 //! To create an OAuth client set `client_id` and `client_secret`:
 //! ```no_run
-//! use roux::subreddit::Subreddits;
-//! use roux::util::RouxError;
-//! use roux::RedditBuilder;
+//! use ruhroux::subreddit::Subreddits;
+//! use ruhroux::util::RouxError;
+//! use ruhroux::RedditBuilder;
 //! use std::env::var;
 //!
 //! #[tokio::main]
@@ -36,9 +36,9 @@
 //! # Readonly
 //! To create a readonly client, don't set `client_id` or `client_secret`:
 //! ```no_run
-//! use roux::subreddit::Subreddit;
-//! use roux::util::RouxError;
-//! use roux::RedditBuilder;
+//! use ruhroux::subreddit::Subreddit;
+//! use ruhroux::util::RouxError;
+//! use ruhroux::RedditBuilder;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), RouxError> {
@@ -55,8 +55,8 @@
 //!
 //! # Submit A Text Post
 //! ```no_run
-//! use roux::util::RouxError;
-//! use roux::RedditBuilder;
+//! use ruhroux::util::RouxError;
+//! use ruhroux::RedditBuilder;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), RouxError> {
@@ -77,8 +77,8 @@
 //!
 //! # Submit A Link Post
 //! ```no_run
-//! use roux::util::RouxError;
-//! use roux::RedditBuilder;
+//! use ruhroux::util::RouxError;
+//! use ruhroux::RedditBuilder;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), RouxError> {
